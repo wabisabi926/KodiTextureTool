@@ -1,0 +1,23 @@
+# PyInstaller build artifacts
+build/
+dist/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Log files
+*.log
+TextureTool_Log.txt
+
+# Virtual environment
+venv/
+.env/
+
+# Windows
+Thumbs.db
+.DS_Store
+
+# Runtime installers (optional, already included but can be large)
+# runtimes/

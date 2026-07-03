@@ -29,11 +29,14 @@ import platform
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locales'))
+from localization_manager import t, get_localization
+
 # ---- Global variables from original script
 # ---- These will be managed as instance attributes in the main class
 APP_VERSION = "v3.1.7"
-APP_TITLE = "Kodi TextureTool"
-APP_AUTHOR = "Chris Bertrand"
+APP_TITLE = t("app_title")
+APP_AUTHOR = t("app_author")
 BUILD_DATE = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
 
 def get_resource_path(relative_path):
@@ -343,24 +346,23 @@ class UpdateProgressDialog(QDialog):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        #self.setWindowTitle("Downloading Update")
-        self.setWindowTitle(f"{APP_TITLE} - {APP_VERSION} - Downloading Update")
+        self.setWindowTitle(t("dialog_download_title", app_title=APP_TITLE, version=APP_VERSION))
         self.setWindowIcon(parent.app_icon if parent else QIcon())
         self.setMinimumWidth(400)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
-        self.status_label = QLabel("Connecting to server...")
+        self.status_label = QLabel(t("dialog_download_connecting"))
         self.progress_bar = QProgressBar()
         layout.addWidget(self.status_label)
         layout.addWidget(self.progress_bar)
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
-        self.status_label.setText(f"Downloading... {value}%")
+        self.status_label.setText(t("dialog_download_progress", value=value))
 
     def set_finished(self):
-        self.status_label.setText("Download complete. Preparing to install...")
+        self.status_label.setText(t("dialog_download_complete"))
         self.progress_bar.setValue(100)
 class FileLogger:
     """A simple logger to write messages to a file, keeping the handle open for efficiency."""
@@ -406,7 +408,7 @@ class CustomHelpDialog(QDialog):
     def __init__(self, parent=None):
 
         super().__init__(parent)
-        self.setWindowTitle(f"{APP_TITLE} - {APP_VERSION} - Help & Support")
+        self.setWindowTitle(t("dialog_help_title", app_title=APP_TITLE, version=APP_VERSION))
         self.setWindowIcon(parent.app_icon if parent else QIcon())
         self.setFixedSize(400, 200)
 
@@ -418,18 +420,14 @@ class CustomHelpDialog(QDialog):
         icon_label.setPixmap(icon_pixmap)
         icon_label.setFixedSize(96, 96)
 
-        text_label = QLabel(
-            "Support (Moral & Otherwise) for Kodi TextureTool is provided through the Kodi community forums.<br><br>"
-            "Opening a log file from the application directory. Please copy/paste and include this log when submitting an issue.<br><br>"
-            "Click <b>OK</b> to open the official Kodi forum thread and the log file."
-        )
+        text_label = QLabel(t("dialog_help_content"))
         text_label.setWordWrap(True)
 
         content_layout.addWidget(icon_label, 0)
         content_layout.addWidget(text_label, 1)
 
         button_box = QHBoxLayout()
-        ok_button = QPushButton("OK")
+        ok_button = QPushButton(t("dialog_ok"))
         ok_button.setMinimumSize(100, 30)
         ok_button.clicked.connect(self.accept)
         button_box.addStretch()
@@ -443,7 +441,7 @@ class CustomAboutDialog(QDialog):
     def __init__(self, parent=None):
         """Initializes the About dialog with a layout matching Translation Tracker."""
         super().__init__(parent)
-        self.setWindowTitle(f"About {APP_TITLE} - {APP_VERSION}")
+        self.setWindowTitle(t("dialog_about_title", app_title=APP_TITLE, version=APP_VERSION))
         self.setWindowIcon(parent.app_icon if parent else QIcon())
 
         # --- Epoch Suffix Calculation ---
@@ -485,18 +483,18 @@ class CustomAboutDialog(QDialog):
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setWordWrap(True)
 
-        description_label = QLabel("The ultimate tool for compiling and decompiling Kodi texture files (.xbt).")
+        description_label = QLabel(t("dialog_about_description"))
         description_label.setWordWrap(True)
         description_label.setStyleSheet("font-style: italic; margin-bottom: 15px;")
         description_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        version_label = QLabel(f"<b>Version:</b> {display_version}")
+        version_label = QLabel(t("dialog_about_version", version=display_version))
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        build_label = QLabel(f"<b>Build Date:</b> {BUILD_DATE}")
+        build_label = QLabel(t("dialog_about_build", build_date=BUILD_DATE))
         build_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        author_label = QLabel(f"<b>Designed by:</b> {APP_AUTHOR}")
+        author_label = QLabel(t("dialog_about_author", author=APP_AUTHOR))
         author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         details_layout.addWidget(title_label)
@@ -508,14 +506,14 @@ class CustomAboutDialog(QDialog):
         details_layout.addStretch(2)
 
         current_year = datetime.now().year
-        copyright_label = QLabel(f"Copyright © {current_year} {APP_AUTHOR}. All rights reserved.")
+        copyright_label = QLabel(t("dialog_about_copyright", year=current_year, author=APP_AUTHOR))
         copyright_label.setStyleSheet("font-size: 8pt;")
         copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         details_layout.addWidget(copyright_label)
 
         # Bottom Button
         button_box = QHBoxLayout()
-        ok_button = QPushButton("OK")
+        ok_button = QPushButton(t("dialog_ok"))
         ok_button.setMinimumSize(100, 30)
         ok_button.clicked.connect(self.accept)
         button_box.addStretch()
@@ -1008,17 +1006,16 @@ class TextureToolApp(QMainWindow):
         compile_output_selected = bool(self.compile_output_file)
         compile_ready = compile_input_selected and compile_output_selected and self.vcredist_checks_passed
 
-        # The new logic prioritizes the "ready" states with more specific messages.
         if decompile_ready:
-            self.status_label.setText("Ready to Decompile. Press Start to begin.")
+            self.status_label.setText(t("status_ready_decompile"))
         elif compile_ready:
-            self.status_label.setText("Ready to Compile. Press Start to begin.")
+            self.status_label.setText(t("status_ready_compile"))
         elif decompile_input_selected and not decompile_output_selected:
-            self.status_label.setText("Step 2 enabled >> Select save location folder")
+            self.status_label.setText(t("status_step2_decompile"))
         elif compile_input_selected and not compile_output_selected:
-            self.status_label.setText("Step 2 enabled >> Select save location file")
+            self.status_label.setText(t("status_step2_compile"))
         else:
-            self.status_label.setText("Select an operation mode to begin.")
+            self.status_label.setText(t("status_select_mode"))
     
     def _finalize_ui_reset(self):
         '''Resets the progress bar and status label after a delay.'''
@@ -1201,33 +1198,33 @@ class TextureToolApp(QMainWindow):
         self.move(top_left_point.x(), top_left_point.y() - 20)
         self._log_message("[INFO] Window position has been reset to the default.")
     def _create_left_panel(self):
-        self.decompile_input_btn = QPushButton(qta.icon('fa5s.file-alt'), " Select input file")
-        self.decompile_input_label = QLabel("[Not Selected]")
-        self.decompile_input_btn.setToolTip("Select .xbt to decompile")
-        self.decompile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), " Select output")
-        self.decompile_output_label = QLabel("[Not Selected]")
-        self.decompile_output_btn.setToolTip("Select folder to extract texture images to")
-        self.decompile_start_btn = QPushButton(qta.icon('fa5s.play'), " Start")
-        self.decompile_start_btn.setToolTip("Start decompile extraction")
-        self.decompile_info_btn = QPushButton(qta.icon('fa5s.info-circle'), " Get Info")
-        self.decompile_info_btn.setToolTip("Get information from the selected .xbt file")
+        self.decompile_input_btn = QPushButton(qta.icon('fa5s.file-alt'), t("btn_select_input_file"))
+        self.decompile_input_label = QLabel(t("lbl_not_selected"))
+        self.decompile_input_btn.setToolTip(t("tooltip_select_xbt"))
+        self.decompile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), t("btn_select_output"))
+        self.decompile_output_label = QLabel(t("lbl_not_selected"))
+        self.decompile_output_btn.setToolTip(t("tooltip_select_output_folder"))
+        self.decompile_start_btn = QPushButton(qta.icon('fa5s.play'), t("btn_start"))
+        self.decompile_start_btn.setToolTip(t("tooltip_start_decompile"))
+        self.decompile_info_btn = QPushButton(qta.icon('fa5s.info-circle'), t("btn_get_info"))
+        self.decompile_info_btn.setToolTip(t("tooltip_get_info"))
         self.decompile_info_btn.setEnabled(False)
-        self.browse_decompile_input_btn = QPushButton(qta.icon('fa5s.history'), ' Open Last')
-        self.browse_decompile_input_btn.setToolTip('Open the last used decompile input file')
-        self.browse_decompile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), " Open Folder")
-        self.browse_decompile_output_btn.setToolTip("Open the selected output folder")
-        self.compile_input_btn = QPushButton(qta.icon('fa5s.folder'), " Select input folder")
-        self.compile_input_label = QLabel("[Not Selected]")
-        self.compile_input_btn.setToolTip("Select folder with source images")
-        self.compile_output_btn = QPushButton(qta.icon('fa5s.file-code'), " Select output file")
-        self.compile_output_label = QLabel("[Not Selected]")
-        self.compile_output_btn.setToolTip("Select folder to compile texture file")
-        self.compile_start_btn = QPushButton(qta.icon('fa5s.play'), " Start")
-        self.compile_start_btn.setToolTip("Start compile process")
-        self.browse_compile_input_btn = QPushButton(qta.icon('fa5s.history'), ' Open Last')
-        self.browse_compile_input_btn.setToolTip('Open the last used compile input folder')
-        self.browse_compile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), " Open Folder")
-        self.browse_compile_output_btn.setToolTip("Open the selected output folder")
+        self.browse_decompile_input_btn = QPushButton(qta.icon('fa5s.history'), t("btn_open_last"))
+        self.browse_decompile_input_btn.setToolTip(t("tooltip_open_last_decompile"))
+        self.browse_decompile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), t("btn_open_folder"))
+        self.browse_decompile_output_btn.setToolTip(t("tooltip_open_output_folder"))
+        self.compile_input_btn = QPushButton(qta.icon('fa5s.folder'), t("btn_select_input_folder"))
+        self.compile_input_label = QLabel(t("lbl_not_selected"))
+        self.compile_input_btn.setToolTip(t("tooltip_select_images_folder"))
+        self.compile_output_btn = QPushButton(qta.icon('fa5s.file-code'), t("btn_select_output_file"))
+        self.compile_output_label = QLabel(t("lbl_not_selected"))
+        self.compile_output_btn.setToolTip(t("tooltip_select_output_file"))
+        self.compile_start_btn = QPushButton(qta.icon('fa5s.play'), t("btn_start"))
+        self.compile_start_btn.setToolTip(t("tooltip_start_compile"))
+        self.browse_compile_input_btn = QPushButton(qta.icon('fa5s.history'), t("btn_open_last"))
+        self.browse_compile_input_btn.setToolTip(t("tooltip_open_last_compile"))
+        self.browse_compile_output_btn = QPushButton(qta.icon('fa5s.folder-open'), t("btn_open_folder"))
+        self.browse_compile_output_btn.setToolTip(t("tooltip_open_output_folder"))
         self.decompile_output_btn.setEnabled(False)
         self.decompile_start_btn.setEnabled(False)
         self.browse_decompile_output_btn.setEnabled(False)
@@ -1252,7 +1249,7 @@ class TextureToolApp(QMainWindow):
         top_layout.addStretch()
         top_layout.addWidget(kodi_logo)
         top_layout.addStretch()
-        self.decompile_box = DropGroupBox("Decompile Mode")
+        self.decompile_box = DropGroupBox(t("decompile_mode"))
         decompile_layout = QFormLayout(self.decompile_box)
         self.decompile_box.fileDropped.connect(self._on_decompile_file_dropped)
         decompile_input_row = QHBoxLayout()
@@ -1264,19 +1261,19 @@ class TextureToolApp(QMainWindow):
         decompile_output_row.addWidget(self.decompile_output_btn)
         self.browse_decompile_output_btn.clicked.connect(self._open_decompile_output_folder)
         decompile_output_row.addWidget(self.browse_decompile_output_btn)
-        decompile_layout.addRow("1. Select the input file:", decompile_input_row)
-        decompile_layout.addRow("File:", self.decompile_input_label)
-        decompile_layout.addRow("2. Select the output directory:", decompile_output_row)
-        decompile_layout.addRow("Directory:", self.decompile_output_label)
+        decompile_layout.addRow(t("form_decompile_step1"), decompile_input_row)
+        decompile_layout.addRow(t("form_decompile_file"), self.decompile_input_label)
+        decompile_layout.addRow(t("form_decompile_step2"), decompile_output_row)
+        decompile_layout.addRow(t("form_decompile_directory"), self.decompile_output_label)
         decompile_actions_row = QHBoxLayout()
         decompile_actions_row.addWidget(self.decompile_start_btn, 1)
         decompile_actions_row.addWidget(self.decompile_info_btn, 1)
-        self.decompile_clear_btn = QPushButton(qta.icon('fa5s.times-circle'), " Clear")
-        self.decompile_clear_btn.setToolTip("Clear decompile selections")
+        self.decompile_clear_btn = QPushButton(qta.icon('fa5s.times-circle'), t("btn_clear"))
+        self.decompile_clear_btn.setToolTip(t("tooltip_clear_decompile"))
         self.decompile_clear_btn.setEnabled(False)
         decompile_actions_row.addWidget(self.decompile_clear_btn)
-        decompile_layout.addRow("3. Press start to begin:", decompile_actions_row)
-        self.compile_box = DropGroupBox("Compile Mode")
+        decompile_layout.addRow(t("form_decompile_step3"), decompile_actions_row)
+        self.compile_box = DropGroupBox(t("compile_mode"))
         self.compile_box.fileDropped.connect(self._on_compile_folder_dropped)
         compile_layout = QFormLayout(self.compile_box)
         compile_input_row = QHBoxLayout()
@@ -1290,46 +1287,46 @@ class TextureToolApp(QMainWindow):
         compile_output_row.addWidget(self.browse_compile_output_btn)
         compile_actions_row = QHBoxLayout()
         compile_actions_row.addWidget(self.compile_start_btn, 1)
-        self.compile_clear_btn = QPushButton(qta.icon('fa5s.times-circle'), " Clear")
-        self.compile_clear_btn.setToolTip("Clear compile selections")
+        self.compile_clear_btn = QPushButton(qta.icon('fa5s.times-circle'), t("btn_clear"))
+        self.compile_clear_btn.setToolTip(t("tooltip_clear_compile"))
         self.compile_clear_btn.setEnabled(False)
         compile_actions_row.addWidget(self.compile_clear_btn)
-        compile_layout.addRow("1. Select the input directory:", compile_input_row)
-        compile_layout.addRow("Directory:", self.compile_input_label)
-        compile_layout.addRow("2. Select the output file:", compile_output_row)
-        compile_layout.addRow("File:", self.compile_output_label)
-        compile_layout.addRow("3. Press start to begin:", compile_actions_row)
+        compile_layout.addRow(t("form_compile_step1"), compile_input_row)
+        compile_layout.addRow(t("form_compile_directory"), self.compile_input_label)
+        compile_layout.addRow(t("form_compile_step2"), compile_output_row)
+        compile_layout.addRow(t("form_compile_file"), self.compile_output_label)
+        compile_layout.addRow(t("form_compile_step3"), compile_actions_row)
         options_layout = QHBoxLayout()
-        self.dupecheck_cb = QCheckBox("Enable dupecheck")
-        self.dupecheck_cb.setToolTip("Prevents duplicate textures from being added during compilation.")
+        self.dupecheck_cb = QCheckBox(t("cb_dupecheck"))
+        self.dupecheck_cb.setToolTip(t("tooltip_dupecheck"))
         self.dupecheck_cb.toggled.connect(self._on_dupecheck_toggled)
-        self.dev_mode_cb = QCheckBox("Dev mode")
-        self.dev_mode_cb.setToolTip("Enable developer mode features. Requires hotkey (Shift+Alt+D) to enable.")
+        self.dev_mode_cb = QCheckBox(t("cb_dev_mode"))
+        self.dev_mode_cb.setToolTip(t("tooltip_dev_mode"))
         self.dev_mode_cb.setEnabled(False)
         self.dev_mode_cb.toggled.connect(self._on_dev_mode_toggled)
-        self.help_support_btn = QPushButton("Help/Support")
-        self.help_support_btn.setToolTip("Open the Kodi forum thread for help and support.")
-        self.reload_all_btn = QPushButton(qta.icon('fa5s.sync-alt'), " Reload All")
-        self.close_all_btn = QPushButton(qta.icon('fa5s.ban'), " Close All")
-        self.close_all_btn.setToolTip("Close all active file/folder selections")
+        self.help_support_btn = QPushButton(t("btn_help_support"))
+        self.help_support_btn.setToolTip(t("tooltip_help_support"))
+        self.reload_all_btn = QPushButton(qta.icon('fa5s.sync-alt'), t("btn_reload_all"))
+        self.close_all_btn = QPushButton(qta.icon('fa5s.ban'), t("btn_close_all"))
+        self.close_all_btn.setToolTip(t("tooltip_close_all"))
         self.close_all_btn.clicked.connect(self._close_all)
-        self.reload_all_btn.setToolTip("Reload the last used paths for all modes")
+        self.reload_all_btn.setToolTip(t("tooltip_reload_all"))
         self.reload_all_btn.clicked.connect(self._reload_all)
-        self.info_btn = QPushButton(qta.icon('fa5s.question-circle'), " About")
-        self.info_btn.setToolTip("Show application version, build date, and author information.")
-        self.clear_log_btn = QPushButton(qta.icon('fa5s.times-circle'), " Clear Log")
-        self.clear_log_btn.setToolTip("Clear event log")
-        self.copy_all_btn = QPushButton(qta.icon('fa5s.copy'), " Copy ALL")
-        self.copy_all_btn.setToolTip("Copy the entire log to the clipboard")
-        self.open_log_file_btn = QPushButton(qta.icon('fa5s.file-alt'), " Open Log File")
-        self.open_log_file_btn.setToolTip("Open the current session log file in the default editor.")
+        self.info_btn = QPushButton(qta.icon('fa5s.question-circle'), t("btn_about"))
+        self.info_btn.setToolTip(t("tooltip_about"))
+        self.clear_log_btn = QPushButton(qta.icon('fa5s.times-circle'), t("btn_clear_log"))
+        self.clear_log_btn.setToolTip(t("tooltip_clear_log"))
+        self.copy_all_btn = QPushButton(qta.icon('fa5s.copy'), t("btn_copy_all"))
+        self.copy_all_btn.setToolTip(t("tooltip_copy_all"))
+        self.open_log_file_btn = QPushButton(qta.icon('fa5s.file-alt'), t("btn_open_log_file"))
+        self.open_log_file_btn.setToolTip(t("tooltip_open_log_file"))
         options_layout.addWidget(self.dev_mode_cb)
         options_layout.addWidget(self.dupecheck_cb)
         options_layout.addStretch()
         options_layout.addWidget(self.reload_all_btn)
         options_layout.addWidget(self.close_all_btn)
         options_layout.addWidget(self.info_btn)
-        self.status_label = QLabel("Select an operation mode to begin.")
+        self.status_label = QLabel(t("status_select_mode"))
         self.status_label.setObjectName("StatusLabel")
         self.progress_bar = QProgressBar()
 
@@ -1400,7 +1397,7 @@ class TextureToolApp(QMainWindow):
         log_layout.addWidget(self.log_widget)
         log_layout.addLayout(log_button_layout)
         # --- Bottom Widget (Image Previewer) ---
-        self.previewer_box = QGroupBox("Image Previewer")
+        self.previewer_box = QGroupBox(t("image_previewer"))
         previewer_layout = QVBoxLayout(self.previewer_box)
 
         # --- NEW: Image Container for Overlay ---
@@ -1409,13 +1406,11 @@ class TextureToolApp(QMainWindow):
         image_container_layout.setContentsMargins(0, 0, 0, 0)
 
         # 1. Image Display Label
-        self.image_display_label = ClickableLabel("Run 'Get Info' on a file to preview textures.")
+        self.image_display_label = ClickableLabel(t("lbl_image_display"))
         self.image_display_label.doubleClicked.connect(self._open_current_preview_image)
-        # --- UPGRADE: Add context menu for more actions ---
-        self.image_display_label.setToolTip("Double-click to open image in default viewer.\nRight-click for more options.")
+        self.image_display_label.setToolTip(t("tooltip_image_display"))
         self.image_display_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.image_display_label.customContextMenuRequested.connect(self._show_image_preview_context_menu)
-        # --- END UPGRADE ---
         self.image_display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_display_label.setMinimumHeight(200)
         self.image_display_label.setStyleSheet("border: 1px solid #4c566a; border-radius: 3px; background-color: #3b4252;")
@@ -1435,64 +1430,61 @@ class TextureToolApp(QMainWindow):
         image_container_layout.addWidget(self.zoom_level_label, 0, 0, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
 
         # 2. Main Info/Filename Label
-        self.image_info_label = QLabel("(0 / 0)")
+        self.image_info_label = QLabel(t("lbl_image_count", current=0, total=0))
         self.image_info_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.image_info_label.setWordWrap(False)
-        # self.image_info_label.setFixedWidth(628) # REMOVED: No longer needed with the new layout.
-        #self.image_info_label.setFrameShape(QFrame.Shape.Panel) Used for debug only, don't delete.
         # --- Create all control widgets before laying them out ---
         self.btn_first = QPushButton(qta.icon('fa5s.fast-backward'), "")
-        self.btn_first.setToolTip("Jump to the first image")
+        self.btn_first.setToolTip(t("tooltip_jump_first"))
         self.btn_prev = QPushButton(qta.icon('fa5s.step-backward'), "")
-        self.btn_prev.setToolTip("Go to the previous image")
+        self.btn_prev.setToolTip(t("tooltip_jump_prev"))
         self.btn_next = QPushButton(qta.icon('fa5s.step-forward'), "")
-        self.btn_next.setToolTip("Go to the next image")
+        self.btn_next.setToolTip(t("tooltip_jump_next"))
         self.btn_last = QPushButton(qta.icon('fa5s.fast-forward'), "")
-        self.btn_last.setToolTip("Jump to the last image")
+        self.btn_last.setToolTip(t("tooltip_jump_last"))
         self.image_details_label = QLabel("")
         self.image_details_label.setObjectName("ImageDetailsLabel")
         self.image_details_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
         # --- MODIFIED: Create Export Button with Dropdown Menu ---
-        self.export_pdf_btn = QPushButton(qta.icon('fa5s.file-pdf'), " Export to PDF")
-        self.export_pdf_btn.setToolTip("Export the retrieved image info to a PDF gallery")
+        self.export_pdf_btn = QPushButton(qta.icon('fa5s.file-pdf'), t("btn_export_pdf"))
+        self.export_pdf_btn.setToolTip(t("tooltip_export_pdf"))
         self.export_pdf_btn.setEnabled(False)
         self.export_pdf_menu = QMenu(self)
-        self.export_all_action = QAction("Export All...", self)
-        self.export_filtered_action = QAction("Export Filtered...", self)
-        self.export_selected_action = QAction("Export Selected...", self)
+        self.export_all_action = QAction(t("export_all"), self)
+        self.export_filtered_action = QAction(t("export_filtered"), self)
+        self.export_selected_action = QAction(t("export_selected"), self)
         self.export_pdf_menu.addAction(self.export_all_action)
         self.export_pdf_menu.addAction(self.export_filtered_action)
         self.export_pdf_menu.addAction(self.export_selected_action)
         self.export_pdf_btn.setMenu(self.export_pdf_menu)
-        # --- END MODIFICATION ---
 
         # --- ZOOM CONTROLS (NEW) ---
         self.btn_zoom_in = QPushButton(qta.icon('fa5s.search-plus'), "")
-        self.btn_zoom_in.setToolTip("Zoom In")
+        self.btn_zoom_in.setToolTip(t("tooltip_zoom_in"))
         self.btn_zoom_out = QPushButton(qta.icon('fa5s.search-minus'), "")
-        self.btn_zoom_out.setToolTip("Zoom Out")
+        self.btn_zoom_out.setToolTip(t("tooltip_zoom_out"))
         self.btn_fit_to_window = QPushButton(qta.icon('fa5s.expand'), "")
-        self.btn_fit_to_window.setToolTip("Fit to Window")
+        self.btn_fit_to_window.setToolTip(t("tooltip_fit_to_window"))
         # --- SEARCH CONTROLS ---
-        jump_to_label = QLabel("Search by:")
+        jump_to_label = QLabel(t("lbl_search_by"))
         self.search_criteria_combo = QComboBox()
-        self.search_criteria_combo.addItems(["Filename", "Index", "Dimensions"])
-        self.search_criteria_combo.setToolTip("Select the criteria to search by.")
+        self.search_criteria_combo.addItems([t("search_criteria_filename"), t("search_criteria_index"), t("search_criteria_dimensions")])
+        self.search_criteria_combo.setToolTip(t("tooltip_search_criteria"))
         self.image_jump_to_edit = QLineEdit()
-        self.image_jump_to_edit.setToolTip("Enter search term and press Enter or use Find buttons.")
+        self.image_jump_to_edit.setToolTip(t("tooltip_search_input"))
         self.dimensions_filter_combo = QComboBox()
-        self.dimensions_filter_combo.setToolTip("Filter images by their dimensions.")
+        self.dimensions_filter_combo.setToolTip(t("tooltip_dimensions_filter"))
         self._populate_dimensions_filter()
         self.search_input_stack = QStackedWidget()
         self.search_input_stack.addWidget(self.image_jump_to_edit)
         self.search_input_stack.addWidget(self.dimensions_filter_combo)
         self.btn_find_prev = QPushButton(qta.icon('fa5s.chevron-left'), "")
-        self.btn_find_prev.setToolTip("Find Previous Match")
+        self.btn_find_prev.setToolTip(t("tooltip_find_prev"))
         self.btn_find_next = QPushButton(qta.icon('fa5s.chevron-right'), "")
-        self.btn_find_next.setToolTip("Find Next Match")
+        self.btn_find_next.setToolTip(t("tooltip_find_next"))
         self.image_nav_slider = QSlider(Qt.Orientation.Horizontal)
-        self.image_nav_slider.setToolTip("Scrub through images quickly.")
+        self.image_nav_slider.setToolTip(t("tooltip_nav_slider"))
         # Set fixed sizes for a consistent look matching the mock-up
         for btn in [self.btn_first, self.btn_prev, self.btn_next, self.btn_last, self.export_pdf_btn, self.btn_find_prev, self.btn_find_next, self.btn_zoom_out, self.btn_zoom_in, self.btn_fit_to_window]:
             btn.setFixedHeight(30)
@@ -1852,7 +1844,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         self._set_ui_task_active(True)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        self.status_label.setText("Step 1/2: Caching images...")
+        self.status_label.setText(t("status_caching_images"))
 
         decompile_cwd = os.path.join(self.workspace_dir, "utils", "TexturePacker_Decompile")
         decompile_exe = os.path.join(decompile_cwd, "TextureExtractor.exe")
@@ -1955,7 +1947,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         # --- END DEV MODE ---
 
         self.progress_bar.setValue(0)
-        self.status_label.setText("Compile in progress... Please wait")
+        self.status_label.setText(t("status_compiling"))
         self._show_tray_message(APP_TITLE, "Compile in progress...")
 
         log_command = " ".join([f'"{arg}"' if " " in arg else arg for arg in command_parts])
@@ -2064,7 +2056,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
             self._set_ui_task_active(False)
             self._update_button_states()
 
-            self.status_label.setText("Info retrieval complete. Rendering log to window...")
+            self.status_label.setText(t("status_info_complete"))
 
             QTimer.singleShot(0, self._process_log_message_buffer)
             return
@@ -2104,7 +2096,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
 
         self._set_ui_task_active(True)
         self._log_message(f"[INFO] Requesting elevation to launch installer: {installer_path}")
-        self.status_label.setText("Waiting for installer to finish...")
+        self.status_label.setText(t("status_waiting_installer"))
 
         class ShellExecuteInfo(ctypes.Structure):
             _fields_ = [
@@ -2127,7 +2119,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         if not ctypes.windll.shell32.ShellExecuteExW(ctypes.byref(info)):
             self._log_message("[ERROR] Failed to start installer process. The request may have been cancelled.")
             self._set_ui_task_active(False)
-            self.status_label.setText("Installer launch failed.")
+            self.status_label.setText(t("status_installer_failed"))
             return
 
         self.installer_thread = QThread(self)
@@ -2144,11 +2136,11 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         """Handles the completion of the runtime installer process."""
         if error_msg:
             self._log_message(f"[ERROR] Installer monitoring failed: {error_msg}")
-            self.status_label.setText("Installer finished with an error.")
+            self.status_label.setText(t("status_installer_error"))
             self._show_tray_message(APP_TITLE, "Runtime Installation Failed", QSystemTrayIcon.MessageIcon.Warning)
         else:
             self._log_message("[INFO] Runtime installer process finished successfully.")
-            self.status_label.setText("Installer finished.")
+            self.status_label.setText(t("status_installer_finished"))
             self._show_tray_message(APP_TITLE, "Runtime Installation Complete", QSystemTrayIcon.MessageIcon.Information)
             # Re-check vcredist status after installation
             self._log_message("[INFO] Re-checking Visual C++ Redistributable status after installation.")
@@ -2220,7 +2212,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         self.decompile_output_label.style().polish(self.decompile_output_label)
         self._set_config_path('decompileoutput', folder_path)
         if not self.vcredist_checks_passed:
-            self.decompile_start_btn.setToolTip("Disabled. Required C++ Runtimes are missing. See Display menu.")
+            self.decompile_start_btn.setToolTip(t("tooltip_disabled_runtimes_decompile"))
         self._log_message(f'[DATA] Decompile output directory: "{os.path.normpath(self.decompile_output_folder)}"')
         self._log_message("[INFO] Output folder destination loaded successfully.")
         self._add_recent(RecentGroup.DECOMPILE_FOLDERS, folder_path)
@@ -2250,7 +2242,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         self.compile_output_label.style().polish(self.compile_output_label)
         self._set_config_path('compileoutput', os.path.dirname(file_path))
         if not self.vcredist_checks_passed:
-            self.compile_start_btn.setToolTip("Disabled. Required C++ Runtimes are missing. See Display menu.")
+            self.compile_start_btn.setToolTip(t("tooltip_disabled_runtimes_compile"))
         self._log_message(f'[DATA] Path to output file: "{os.path.normpath(self.compile_output_file)}"')
         self._log_message("[INFO] Output folder destination loaded successfully.")
         self._add_recent(RecentGroup.COMPILE_FILES, file_path)
@@ -2289,155 +2281,155 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         self._handle_compile_output_path(path)
     def _create_menu_bar(self):
         menu_bar = self.menuBar()
-        file_menu = menu_bar.addMenu("&File")
-        compile_menu = file_menu.addMenu(qta.icon('fa5s.file-archive'), "Compile")
-        compile_file_menu = compile_menu.addMenu("File")
-        open_compile_file_action = QAction("Open", self)
-        open_compile_file_action.setToolTip("Select the output file location for compilation (e.g., MySkin.xbt)")
+        file_menu = menu_bar.addMenu(t("menu_file_main"))
+        compile_menu = file_menu.addMenu(qta.icon('fa5s.file-archive'), t("compile_mode"))
+        compile_file_menu = compile_menu.addMenu(t("menu_file"))
+        open_compile_file_action = QAction(t("menu_open"), self)
+        open_compile_file_action.setToolTip(t("tooltip_open_compile_file"))
         open_compile_file_action.triggered.connect(self._select_compile_output)
         compile_file_menu.addAction(open_compile_file_action)
-        compile_folder_menu = compile_menu.addMenu("Folder")
-        open_compile_folder_action = QAction("Open", self)
-        open_compile_folder_action.setToolTip("Select the input folder containing images to compile")
+        compile_folder_menu = compile_menu.addMenu(t("menu_folder"))
+        open_compile_folder_action = QAction(t("menu_open"), self)
+        open_compile_folder_action.setToolTip(t("tooltip_open_compile_folder"))
         open_compile_folder_action.triggered.connect(self._select_compile_input)
         compile_folder_menu.addAction(open_compile_folder_action)
-        decompile_menu = file_menu.addMenu(qta.icon('fa5s.box-open'), "Decompile")
-        decompile_file_menu = decompile_menu.addMenu("File")
-        open_decompile_file_action = QAction("Open", self)
-        open_decompile_file_action.setToolTip("Select the input .xbt file to decompile")
+        decompile_menu = file_menu.addMenu(qta.icon('fa5s.box-open'), t("decompile_mode"))
+        decompile_file_menu = decompile_menu.addMenu(t("menu_file"))
+        open_decompile_file_action = QAction(t("menu_open"), self)
+        open_decompile_file_action.setToolTip(t("tooltip_open_decompile_file"))
         open_decompile_file_action.triggered.connect(self._select_decompile_input)
         decompile_file_menu.addAction(open_decompile_file_action)
-        decompile_folder_menu = decompile_menu.addMenu("Folder")
-        open_decompile_folder_action = QAction("Open", self)
-        open_decompile_folder_action.setToolTip("Select the output folder where extracted images will be saved")
+        decompile_folder_menu = decompile_menu.addMenu(t("menu_folder"))
+        open_decompile_folder_action = QAction(t("menu_open"), self)
+        open_decompile_folder_action.setToolTip(t("tooltip_open_decompile_folder"))
         open_decompile_folder_action.triggered.connect(self._select_decompile_output)
         decompile_folder_menu.addAction(open_decompile_folder_action)
         file_menu.addSeparator()
-        self.recent_compile_menu = file_menu.addMenu(qta.icon('fa5s.history'), "Recent Compile")
-        self.recent_compile_files_menu = self.recent_compile_menu.addMenu("Files")
-        self.clear_compile_files_action = QAction("Clear Recent Files", self)
-        self.clear_compile_files_action.setToolTip("Clear the list of recent compile output files")
+        self.recent_compile_menu = file_menu.addMenu(qta.icon('fa5s.history'), t("menu_recent_compile"))
+        self.recent_compile_files_menu = self.recent_compile_menu.addMenu(t("menu_files"))
+        self.clear_compile_files_action = QAction(t("menu_clear_recent_files"), self)
+        self.clear_compile_files_action.setToolTip(t("tooltip_clear_compile_files"))
         self.clear_compile_files_action.triggered.connect(lambda: self._clear_recent(RecentGroup.COMPILE_FILES))
-        self.recent_compile_folders_menu = self.recent_compile_menu.addMenu("Folders")
-        self.clear_compile_folders_action = QAction("Clear Recent Folders", self)
-        self.clear_compile_folders_action.setToolTip("Clear the list of recent compile input folders")
+        self.recent_compile_folders_menu = self.recent_compile_menu.addMenu(t("menu_folders"))
+        self.clear_compile_folders_action = QAction(t("menu_clear_recent_folders"), self)
+        self.clear_compile_folders_action.setToolTip(t("tooltip_clear_compile_folders"))
         self.clear_compile_folders_action.triggered.connect(lambda: self._clear_recent(RecentGroup.COMPILE_FOLDERS))
-        self.recent_decompile_menu = file_menu.addMenu(qta.icon('fa5s.history'), "Recent Decompile")
-        self.recent_decompile_files_menu = self.recent_decompile_menu.addMenu("Files")
-        self.clear_decompile_files_action = QAction("Clear Recent Files", self)
-        self.clear_decompile_files_action.setToolTip("Clear the list of recent decompile input files")
+        self.recent_decompile_menu = file_menu.addMenu(qta.icon('fa5s.history'), t("menu_recent_decompile"))
+        self.recent_decompile_files_menu = self.recent_decompile_menu.addMenu(t("menu_files"))
+        self.clear_decompile_files_action = QAction(t("menu_clear_recent_files"), self)
+        self.clear_decompile_files_action.setToolTip(t("tooltip_clear_decompile_files"))
         self.clear_decompile_files_action.triggered.connect(lambda: self._clear_recent(RecentGroup.DECOMPILE_FILES))
-        self.recent_decompile_folders_menu = self.recent_decompile_menu.addMenu("Folders")
-        self.clear_decompile_folders_action = QAction("Clear Recent Folders", self)
-        self.clear_decompile_folders_action.setToolTip("Clear the list of recent decompile output folders")
+        self.recent_decompile_folders_menu = self.recent_decompile_menu.addMenu(t("menu_folders"))
+        self.clear_decompile_folders_action = QAction(t("menu_clear_recent_folders"), self)
+        self.clear_decompile_folders_action.setToolTip(t("tooltip_clear_decompile_folders"))
         self.clear_decompile_folders_action.triggered.connect(lambda: self._clear_recent(RecentGroup.DECOMPILE_FOLDERS))
         self._update_recent_menus()
         file_menu.addSeparator()
-        self.reload_all_action = QAction(qta.icon('fa5s.sync-alt'), "Reload All", self)
-        self.reload_all_action.setToolTip("Reload the most recently used paths for all modes")
+        self.reload_all_action = QAction(qta.icon('fa5s.sync-alt'), t("btn_reload_all"), self)
+        self.reload_all_action.setToolTip(t("tooltip_reload_all_action"))
         self.reload_all_action.triggered.connect(self._reload_all)
         file_menu.addAction(self.reload_all_action)
-        close_all_action = QAction(qta.icon('fa5s.ban'), "Close All", self)
-        close_all_action.setToolTip("Clear all active input and output selections")
+        close_all_action = QAction(qta.icon('fa5s.ban'), t("btn_close_all"), self)
+        close_all_action.setToolTip(t("tooltip_close_all_action"))
         close_all_action.triggered.connect(self._close_all)
         file_menu.addAction(close_all_action)
         file_menu.addSeparator()
-        exit_action = QAction("&Exit", self)
-        exit_action.setToolTip("Exit the application")
+        exit_action = QAction(t("menu_exit"), self)
+        exit_action.setToolTip(t("tooltip_exit"))
         exit_action.setIcon(qta.icon('fa5s.sign-out-alt'))
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        display_menu = menu_bar.addMenu("&Display")
-        self.open_decompile_on_complete_action = QAction("Open Decompile Folder on Completion", self)
-        self.open_decompile_on_complete_action.setToolTip("Automatically open the output folder after a successful decompile")
+        display_menu = menu_bar.addMenu(t("menu_display"))
+        self.open_decompile_on_complete_action = QAction(t("menu_open_decompile_on_complete"), self)
+        self.open_decompile_on_complete_action.setToolTip(t("tooltip_open_decompile_on_complete"))
         self.open_decompile_on_complete_action.setCheckable(True)
         self.open_decompile_on_complete_action.setChecked(self.open_decompile_on_complete)
         self.open_decompile_on_complete_action.triggered.connect(self._toggle_open_decompile_on_complete)
         display_menu.addAction(self.open_decompile_on_complete_action)
-        self.open_compile_on_complete_action = QAction("Open Compile Folder on Completion", self)
-        self.open_compile_on_complete_action.setToolTip("Automatically open the output folder after a successful compile")
+        self.open_compile_on_complete_action = QAction(t("menu_open_compile_on_complete"), self)
+        self.open_compile_on_complete_action.setToolTip(t("tooltip_open_compile_on_complete"))
         self.open_compile_on_complete_action.setCheckable(True)
         self.open_compile_on_complete_action.setChecked(self.open_compile_on_complete)
         self.open_compile_on_complete_action.triggered.connect(self._toggle_open_compile_on_complete)
         display_menu.addAction(self.open_compile_on_complete_action)
-        self.open_pdf_on_complete_action = QAction("Open PDF Report on Completion", self)
-        self.open_pdf_on_complete_action.setToolTip("Automatically open the generated PDF report after a successful export")
+        self.open_pdf_on_complete_action = QAction(t("menu_open_pdf_on_complete"), self)
+        self.open_pdf_on_complete_action.setToolTip(t("tooltip_open_pdf_on_complete"))
         self.open_pdf_on_complete_action.setCheckable(True)
         self.open_pdf_on_complete_action.setChecked(self.open_pdf_on_complete)
         self.open_pdf_on_complete_action.triggered.connect(self._toggle_open_pdf_on_complete)
         display_menu.addAction(self.open_pdf_on_complete_action)
         display_menu.addSeparator()
-        self.log_position_action = QAction("Swap Log Viewer/Image Previewer Position", self)
-        self.log_position_action.setToolTip("Toggle the position of the log viewer (top or bottom)")
+        self.log_position_action = QAction(t("menu_swap_log_position"), self)
+        self.log_position_action.setToolTip(t("tooltip_swap_log_position"))
         self.log_position_action.setCheckable(True)
         self.log_position_action.setChecked(self.log_on_top)
         self.log_position_action.triggered.connect(self._toggle_log_previewer_position)
         display_menu.addAction(self.log_position_action)
-        self.swap_groups_action = QAction("Show Compile Mode on Top", self)
-        self.swap_groups_action.setToolTip("Display the Compile Mode group at the top of the panel.")
+        self.swap_groups_action = QAction(t("menu_show_compile_on_top"), self)
+        self.swap_groups_action.setToolTip(t("tooltip_show_compile_on_top"))
         self.swap_groups_action.setCheckable(True)
         self.swap_groups_action.setChecked(not self.decompile_on_top)
         self.swap_groups_action.triggered.connect(self._toggle_compile_decompile_position)
         display_menu.addAction(self.swap_groups_action)
         display_menu.addSeparator()
-        reset_geometry_action = QAction(qta.icon('fa5s.window-restore'), "Reset Window Position", self)
-        reset_geometry_action.setToolTip("Reset the main window size and position to the default")
+        reset_geometry_action = QAction(qta.icon('fa5s.window-restore'), t("menu_reset_position"), self)
+        reset_geometry_action.setToolTip(t("tooltip_reset_geometry"))
         reset_geometry_action.triggered.connect(self._reset_window_geometry)
         display_menu.addAction(reset_geometry_action)
         display_menu.addSeparator()
-        clear_log_action = QAction("&Clear Event Log", self)
-        clear_log_action.setToolTip("Clear all messages from the log viewer")
+        clear_log_action = QAction(t("menu_clear_event_log"), self)
+        clear_log_action.setToolTip(t("tooltip_clear_log_action"))
         clear_log_action.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogResetButton))
         clear_log_action.triggered.connect(self._clear_log)
         display_menu.addAction(clear_log_action)
-        options_menu = menu_bar.addMenu("&Options")
-        self.update_check_on_startup_action = QAction("Check for Updates on Startup", self)
-        self.update_check_on_startup_action.setToolTip("Enable or disable automatic update checks when the application starts")
+        options_menu = menu_bar.addMenu(t("menu_options"))
+        self.update_check_on_startup_action = QAction(t("menu_check_updates_on_startup"), self)
+        self.update_check_on_startup_action.setToolTip(t("tooltip_check_updates_on_startup"))
         self.update_check_on_startup_action.setCheckable(True)
         self.update_check_on_startup_action.setChecked(self.check_for_updates_on_startup)
         self.update_check_on_startup_action.triggered.connect(self._toggle_update_check_on_startup)
         options_menu.addAction(self.update_check_on_startup_action)
         options_menu.addSeparator()
-        self.install_runtimes_action = QAction("&Install Runtimes", self)
+        self.install_runtimes_action = QAction(t("menu_install_runtimes"), self)
         self.install_runtimes_action.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowDown))
         self.install_runtimes_action.triggered.connect(self._install_runtimes)
         options_menu.addAction(self.install_runtimes_action)
-        self.reinstall_runtimes_action = QAction("&Reinstall Runtimes", self)
+        self.reinstall_runtimes_action = QAction(t("menu_reinstall_runtimes"), self)
         self.reinstall_runtimes_action.setIcon(qta.icon('fa5s.sync-alt'))
         self.reinstall_runtimes_action.triggered.connect(self._install_runtimes)
         options_menu.addAction(self.reinstall_runtimes_action)
-        help_menu = menu_bar.addMenu("&Help")
-        about_action = QAction(qta.icon('fa5s.info-circle'), "&About", self)
-        about_action.setToolTip("Show application information")
+        help_menu = menu_bar.addMenu(t("menu_help"))
+        about_action = QAction(qta.icon('fa5s.info-circle'), t("menu_about"), self)
+        about_action.setToolTip(t("tooltip_about"))
         about_action.triggered.connect(self._show_about_dialog)
         help_menu.addAction(about_action)
-        changelog_action = QAction("&View Changelog", self)
-        changelog_action.setToolTip("View the application's version history and changes")
+        changelog_action = QAction(t("menu_view_changelog"), self)
+        changelog_action.setToolTip(t("tooltip_changelog"))
         changelog_action.setIcon(qta.icon('fa5s.file-alt'))
         changelog_action.triggered.connect(self._show_changelog_dialog)
         help_menu.addAction(changelog_action)
-        help_action = QAction(qta.icon('fa5s.question-circle'), "&View Help File", self)
-        help_action.setToolTip("Open the detailed help documentation")
+        help_action = QAction(qta.icon('fa5s.question-circle'), t("menu_view_help"), self)
+        help_action.setToolTip(t("tooltip_help"))
         help_action.triggered.connect(self._show_help_dialog)
         help_menu.addAction(help_action)
-        kodi_forum_action = QAction(qta.icon('fa5s.users'), "Kodi Forum Link", self)
-        kodi_forum_action.setToolTip("Open the official Kodi support forum thread")
+        kodi_forum_action = QAction(qta.icon('fa5s.users'), t("menu_kodi_forum"), self)
+        kodi_forum_action.setToolTip(t("tooltip_kodi_forum"))
         kodi_forum_action.triggered.connect(lambda: webbrowser.open("https://forum.kodi.tv/showthread.php?tid=382565"))
         help_menu.addAction(kodi_forum_action)
-        github_action = QAction(qta.icon('fa5b.github'), "GitHub Link", self)
-        github_action.setToolTip("Open the project's GitHub repository")
+        github_action = QAction(qta.icon('fa5b.github'), t("menu_github"), self)
+        github_action.setToolTip(t("tooltip_github"))
         github_action.triggered.connect(lambda: webbrowser.open("https://github.com/kittmaster/KodiTextureTool"))
         help_menu.addAction(github_action)
         help_menu.addSeparator()
-        self.update_action = QAction("&Check for Updates...", self)
+        self.update_action = QAction(t("menu_check_for_updates"), self)
         self.update_action.setIcon(qta.icon('fa5s.cloud-download-alt'))
         self.update_action.triggered.connect(lambda: self._check_for_updates(manual=True))
         self.update_action.setEnabled(False)
-        self.update_action.setToolTip("Disabled. Requires the VC++ Runtimes to be installed.")
+        self.update_action.setToolTip(t("tooltip_update_disabled"))
         help_menu.addAction(self.update_action)
         help_menu.addSeparator()
-        self.dev_update_action = QAction(qta.icon('fa5s.vial'), "&Check for Dev Update URL...", self)
-        self.dev_update_action.setToolTip("Manually provide a URL to a version.json file for update testing.")
+        self.dev_update_action = QAction(qta.icon('fa5s.vial'), t("menu_dev_update"), self)
+        self.dev_update_action.setToolTip(t("tooltip_dev_update"))
         self.dev_update_action.setVisible(False)
         self.dev_update_action.triggered.connect(self._check_for_updates_dev)
         help_menu.addAction(self.dev_update_action)
@@ -2456,7 +2448,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
         self._log_message(f'[INFO] {datetime.now().strftime("%H:%M:%S")}: Checking KittmasterRepo repository for an update. [Complete]')
         self._log_message(f"[ERROR] Update check failed: {err}")
         if manual:
-            self.status_label.setText("Update check failed.")
+            self.status_label.setText(t("status_update_check_failed"))
             self._reset_ui_state()
             msg_box = QMessageBox(self)
             msg_box.setWindowIcon(self.app_icon)
@@ -2487,7 +2479,7 @@ This function is thread-safe. For batch operations, use the log_message_buffer i
             msg_box.setWindowIcon(self.app_icon)
             msg_box.setWindowTitle(f"{APP_TITLE} - File Not Found")
             msg_box.setIcon(QMessageBox.Icon.Critical)
-            msg_box.setText("The changelog.txt file could not be found.")
+            msg_box.setText(t("dialog_changelog_not_found"))
             ok_button = msg_box.addButton(QMessageBox.StandardButton.Ok)
             ok_button.setMinimumSize(100, 30)
             msg_box.exec()
@@ -2756,9 +2748,9 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
                 placeholder_icon = qta.icon('fa5s.ban', color='#4c566a')
                 placeholder_pixmap = placeholder_icon.pixmap(QSize(128, 128))
                 self.image_display_label.setPixmap(placeholder_pixmap)
-                self.image_info_label.setText("Run 'Get Info' to preview textures")
+                self.image_info_label.setText(t("lbl_run_get_info"))
                 self.image_info_label.setToolTip("")
-                self.image_details_label.setText("Dimensions: ... | Format: ... | Size: ...")
+                self.image_details_label.setText(t("lbl_image_details"))
                 self.btn_first.setEnabled(False)
                 self.btn_prev.setEnabled(False)
                 self.btn_next.setEnabled(False)
@@ -2865,8 +2857,8 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
                     if is_search_active:
                         self.export_filtered_action.setText("Export Filtered ({} items)...".format(len(self.search_results)))
                     else:
-                        self.export_filtered_action.setText("Export Filtered...")
-                    self.export_selected_action.setText("Export Selected (1 item)...")
+                        self.export_filtered_action.setText(t("export_filtered"))
+                    self.export_selected_action.setText(t("export_selected_single"))
 
                 if has_ui:
                     self.btn_zoom_in.setEnabled(True)
@@ -2933,7 +2925,7 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
     def _on_get_info_extract_failed(self, error_message):
         """Handles failure during the silent extraction phase of Get Info."""
         self._log_message(f"[ERROR] Failed during silent extraction phase: {error_message}")
-        self.status_label.setText("Error caching images.")
+        self.status_label.setText(t("status_error_caching"))
         self.progress_bar.setRange(0, 100)
         self._reset_ui_after_task()
     def _start_get_info_phase2(self, return_code, output):
@@ -2948,13 +2940,13 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
             self.decompile_for_info_worker = None
 
             if not self.info_cache_dir or not self.workspace_dir:
-                self._on_get_info_extract_failed("Cache or workspace directory does not exist. Cannot proceed.")
+                self._on_get_info_extract_failed(t("error_cache_directory"))
                 return
 
             assert self.workspace_dir is not None
 
             self._log_message("[INFO] Image cache created successfully.")
-            self.status_label.setText("Step 2/2: Reading texture information...")
+            self.status_label.setText(t("status_reading_info"))
             self.progress_bar.setRange(0, 100)
 
             process_cwd = os.path.join(self.workspace_dir, "utils", "TexturePacker_Compile")
@@ -2992,13 +2984,13 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
         """Handles the completion or failure of the PDF export background task."""
         if pdf_path:
             self._log_message(f"[INFO] {result_message}")
-            self.status_label.setText("PDF export complete.")
+            self.status_label.setText(t("status_pdf_complete"))
             self._show_tray_message("Export Complete", result_message)
             if self.open_pdf_on_complete:
                 self._delayed_open_folder(pdf_path)
         else:
             self._log_message(f"[ERROR] {result_message}")
-            self.status_label.setText("PDF export failed.")
+            self.status_label.setText(t("status_pdf_failed"))
             self._show_tray_message("Export Failed", result_message, QSystemTrayIcon.MessageIcon.Warning)
 
         self._reset_ui_after_task()
@@ -3224,12 +3216,12 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
         '''Clears only the decompile mode file and folder selections.'''
         self.decompile_input_file = ""
         self.decompile_output_folder = ""
-        self.decompile_input_label.setText("[Not Selected]")
+        self.decompile_input_label.setText(t("lbl_not_selected"))
         self.decompile_input_label.setToolTip("")
         self.decompile_input_label.setProperty("state", "unselected")
         self.decompile_input_label.style().unpolish(self.decompile_input_label)
         self.decompile_input_label.style().polish(self.decompile_input_label)
-        self.decompile_output_label.setText("[Not Selected]")
+        self.decompile_output_label.setText(t("lbl_not_selected"))
         self.decompile_output_label.setToolTip("")
         self.decompile_output_label.setProperty("state", "unselected")
         self.decompile_output_label.style().unpolish(self.decompile_output_label)
@@ -3246,12 +3238,12 @@ start "" /d "%APP_DIR%\\.." "%APP_DIR%\\..\\%APP_EXE_TO_KILL%"
         '''Clears only the compile mode file and folder selections.'''
         self.compile_input_folder = ""
         self.compile_output_file = ""
-        self.compile_input_label.setText("[Not Selected]")
+        self.compile_input_label.setText(t("lbl_not_selected"))
         self.compile_input_label.setToolTip("")
         self.compile_input_label.setProperty("state", "unselected")
         self.compile_input_label.style().unpolish(self.compile_input_label)
         self.compile_input_label.style().polish(self.compile_input_label)
-        self.compile_output_label.setText("[Not Selected]")
+        self.compile_output_label.setText(t("lbl_not_selected"))
         self.compile_output_label.setToolTip("")
         self.compile_output_label.setProperty("state", "unselected")
         self.compile_output_label.style().unpolish(self.compile_output_label)
@@ -3605,7 +3597,7 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
         """Populates the dimensions combo box with unique dimensions from the image data."""
         self.dimensions_filter_combo.blockSignals(True)
         self.dimensions_filter_combo.clear()
-        self.dimensions_filter_combo.addItem("-- Filter by Dimensions --")
+        self.dimensions_filter_combo.addItem(t("filter_by_dimensions"))
 
         if self.preview_images:
             all_dims = [img.get('dimensions', 'N/A') for img in self.preview_images]
@@ -3682,7 +3674,7 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
             # The label size MUST match the pixmap size to prevent jagged re-scaling
             icon_label.setFixedSize(70, 70)
 
-            title_label = QLabel("A new version is available!")
+            title_label = QLabel(t("update_new_version"))
             title_label.setStyleSheet("font-size: 14pt;")
 
             content_h_layout.addWidget(icon_label)
@@ -3728,16 +3720,16 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
             main_layout.addWidget(scroll_area)
 
             # --- Bottom Question and Buttons ---
-            question_label = QLabel("Would you like to download and update now?")
+            question_label = QLabel(t("update_download_question"))
             question_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             main_layout.addWidget(question_label)
 
             button_box = QHBoxLayout()
-            yes_button = QPushButton("Yes")
+            yes_button = QPushButton(t("dialog_yes"))
             yes_button.setMinimumSize(100, 30)
             yes_button.clicked.connect(self.accept)
 
-            no_button = QPushButton("No")
+            no_button = QPushButton(t("dialog_no"))
             no_button.setMinimumSize(100, 30)
             no_button.clicked.connect(self.reject)
 
@@ -3771,7 +3763,7 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
         self._log_message(f'[INFO] {datetime.now().strftime("%H:%M:%S")}: Checking for update from {url}. [Started]')
         if manual:
             self._log_message("[INFO] Manually checking for updates.")
-            self.status_label.setText("Checking for updates...")
+            self.status_label.setText(t("status_checking_updates"))
         else:
             #checking_icon = qta.icon('fa5s.cloud-download-alt', color='#D4AF37') # Soft gold color
             checking_icon = qta.icon('mdi.cloud-search-outline', color=self.COLOR_SOFT_GOLD)  # Soft gold color
@@ -3790,8 +3782,8 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
         """Prompts the user for a custom version.json URL and starts the update check."""
 
         dialog = QInputDialog(self)
-        dialog.setWindowTitle("Developer Update Check")
-        dialog.setLabelText("Enter the full URL to the version.json file for testing:")
+        dialog.setWindowTitle(t("update_dev_title"))
+        dialog.setLabelText(t("update_dev_label"))
         dialog.setTextValue(self.dev_update_url)
         dialog.setInputMode(QInputDialog.InputMode.TextInput)
 
@@ -3888,23 +3880,23 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
         if self.update_action:
             self.update_action.setEnabled(self.vcredist_checks_passed)
             if self.vcredist_checks_passed:
-                self.update_action.setToolTip("Manually check for new application updates")
+                self.update_action.setToolTip(t("tooltip_update_check"))
             else:
-                self.update_action.setToolTip("Disabled. Requires the VC++ Runtimes to be installed.")
+                self.update_action.setToolTip(t("tooltip_update_disabled"))
 
         if self.install_runtimes_action:
             self.install_runtimes_action.setEnabled(not self.vcredist_checks_passed)
             if self.vcredist_checks_passed:
-                self.install_runtimes_action.setToolTip("Runtimes are already installed.")
+                self.install_runtimes_action.setToolTip(t("tooltip_install_runtimes_installed"))
             else:
-                self.install_runtimes_action.setToolTip("Install the required Visual C++ 2010 Runtimes (requires administrator).")
+                self.install_runtimes_action.setToolTip(t("tooltip_install_runtimes"))
 
         if self.reinstall_runtimes_action:
             self.reinstall_runtimes_action.setEnabled(self.vcredist_checks_passed)
             if self.vcredist_checks_passed:
-                self.reinstall_runtimes_action.setToolTip("Force a reinstallation of the runtimes (for repair).")
+                self.reinstall_runtimes_action.setToolTip(t("tooltip_reinstall_runtimes"))
             else:
-                self.reinstall_runtimes_action.setToolTip("Runtimes must be installed first before they can be reinstalled.")
+                self.reinstall_runtimes_action.setToolTip(t("tooltip_reinstall_runtimes_disabled"))
     def _zoom_out(self):
         """Reduces the zoom level of the displayed image."""
         if not self.preview_images or self.current_preview_index == -1:
@@ -4021,7 +4013,7 @@ Processes the entire log buffer in a single, efficient operation to prevent UI f
             return
 
         self._log_message(f"[INFO] ----- Starting PDF Export of {export_description} to {os.path.basename(save_path)} -----")
-        self.status_label.setText("Exporting to PDF... Please wait.")
+        self.status_label.setText(t("status_exporting_pdf"))
         self.progress_bar.setValue(0)
         self._set_ui_task_active(True)
 
@@ -4167,7 +4159,7 @@ class ChangelogDialog(QDialog):
         text_edit.setHtml(changelog_text)
         text_edit.document().setDocumentMargin(0)
         layout.addWidget(text_edit)
-        close_button = QPushButton("Close")
+        close_button = QPushButton(t("dialog_close"))
         close_button.clicked.connect(self.accept)
         layout.addWidget(close_button)
 
@@ -4184,18 +4176,18 @@ class HelpDialog(QDialog):
 
         # --- Navigation and Font Controls ---
         self.back_button = QPushButton(qta.icon('fa5s.arrow-left'), "")
-        self.back_button.setToolTip("Back")
+        self.back_button.setToolTip(t("help_back"))
         self.back_button.setEnabled(False)
         self.forward_button = QPushButton(qta.icon('fa5s.arrow-right'), "")
-        self.forward_button.setToolTip("Forward")
+        self.forward_button.setToolTip(t("help_forward"))
         self.forward_button.setEnabled(False)
 
         font_decrease_button = QPushButton(qta.icon('fa5s.search-minus'), "")
-        font_decrease_button.setToolTip("Decrease Font Size")
+        font_decrease_button.setToolTip(t("help_font_decrease"))
         font_increase_button = QPushButton(qta.icon('fa5s.search-plus'), "")
-        font_increase_button.setToolTip("Increase Font Size")
+        font_increase_button.setToolTip(t("help_font_increase"))
         font_reset_button = QPushButton(qta.icon('fa5s.home'), "")
-        font_reset_button.setToolTip("Reset Font Size")
+        font_reset_button.setToolTip(t("help_font_reset"))
 
         top_bar_layout.addWidget(self.back_button)
         top_bar_layout.addWidget(self.forward_button)
@@ -4261,22 +4253,22 @@ class HelpDialog(QDialog):
         layout = QHBoxLayout(search_widget)
         layout.setContentsMargins(0, 5, 0, 5)
 
-        label = QLabel("Search:")
+        label = QLabel(t("help_search_label"))
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Filter TOC or find text...")
-        self.search_input.setToolTip("Filter the table of contents or enter text to find in the document.")
+        self.search_input.setPlaceholderText(t("help_search_placeholder"))
+        self.search_input.setToolTip(t("help_search_input"))
 
         self.clear_search_button = QPushButton(qta.icon('fa5s.times'), "")
-        self.clear_search_button.setToolTip("Clear Search")
+        self.clear_search_button.setToolTip(t("help_clear_search"))
 
-        find_prev_button = QPushButton("Previous")
+        find_prev_button = QPushButton(t("help_previous"))
         find_prev_button.setFixedWidth(80)
-        find_prev_button.setToolTip("Find the previous occurrence of the search text.")
+        find_prev_button.setToolTip(t("help_find_prev"))
         find_prev_button.clicked.connect(self._find_previous)
 
-        find_next_button = QPushButton("Next")
+        find_next_button = QPushButton(t("help_next"))
         find_next_button.setFixedWidth(80)
-        find_next_button.setToolTip("Find the next occurrence of the search text.")
+        find_next_button.setToolTip(t("help_find_next"))
         find_next_button.clicked.connect(self._find_next)
 
         layout.addWidget(label)
